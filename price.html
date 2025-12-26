@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>选择价格套餐</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { transition: all 0.3s ease; }
+        body {
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .price-container {
+            max-width: 400px;
+            width: 100%;
+            background: white;
+            border-radius: 16px;
+            padding: 30px 20px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.05);
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .title {
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .price-item {
+            border: 1px solid #eee;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .price-item.selected {
+            border-color: #ff6700;
+            background: #fff8f0;
+        }
+        .price-item input {
+            accent-color: #ff6700;
+            cursor: pointer;
+        }
+        .price-text {
+            font-size: 15px;
+            color: #333;
+            cursor: pointer;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .confirm-btn, .back-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .confirm-btn {
+            background: #ff6700;
+            color: white;
+        }
+        .confirm-btn:hover {
+            background: #e55a00;
+        }
+        .confirm-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .back-btn {
+            background: #eee;
+            color: #333;
+        }
+        .back-btn:hover {
+            background: #ddd;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="price-container">
+        <div class="title" id="priceTitle">选择价格套餐</div>
+        
+        <!-- 价格选项容器（根据商品ID动态生成） -->
+        <div id="priceOptions"></div>
+        
+        <!-- 按钮组：确认购买 + 返回 -->
+        <div class="btn-group">
+            <button class="back-btn" onclick="goBackToProduct()">返回</button>
+            <button class="confirm-btn" id="confirmBtn" disabled onclick="goToPay()">确认购买</button>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量：选中的价格索引
+        let selectedIndex = -1;
+        // 获取URL中的商品ID
+        const urlParams = new URLSearchParams(window.location.search);
+        const productId = urlParams.get('id');
+
+        // 初始化价格选项
+        initPriceOptions();
+
+        // 根据商品ID生成价格选项
+        function initPriceOptions() {
+            const priceOptionsEl = document.getElementById('priceOptions');
+            const titleEl = document.getElementById('priceTitle');
+
+            // 商品1：透锁换肤
+            if (productId === '1') {
+                titleEl.textContent = "透锁换肤（易封）- 价格选择";
+                priceOptionsEl.innerHTML = `
+                    <div class="price-item" onclick="selectPrice(0)">
+                        <input type="radio" name="price" id="price1">
+                        <label for="price1" class="price-text">40元/一天</label>
+                    </div>
+                `;
+            } 
+            // 商品2：单换肤版本（新增3天9.8元选项）
+            else if (productId === '2') {
+                titleEl.textContent = "单换肤版本（0封）- 价格选择";
+                priceOptionsEl.innerHTML = `
+                    <!-- 新增：3天9.8元选项 -->
+                    <div class="price-item" onclick="selectPrice(0)">
+                        <input type="radio" name="price" id="price2">
+                        <label for="price2" class="price-text">3天9.8元</label>
+                    </div>
+                    <div class="price-item" onclick="selectPrice(1)">
+                        <input type="radio" name="price" id="price3">
+                        <label for="price3" class="price-text">25元/10天</label>
+                    </div>
+                    <div class="price-item" onclick="selectPrice(2)">
+                        <input type="radio" name="price" id="price4">
+                        <label for="price4" class="price-text">50元/30天</label>
+                    </div>
+                `;
+            }
+            // 非法ID，返回商品页
+            else {
+                goBackToProduct();
+            }
+        }
+
+        // 选择价格选项（兼容3个选项的索引）
+        function selectPrice(index) {
+            // 取消所有选中状态
+            const allItems = document.querySelectorAll('.price-item');
+            allItems.forEach(item => {
+                item.classList.remove('selected');
+                item.querySelector('input').checked = false;
+            });
+            // 选中当前选项
+            const currentItem = allItems[index];
+            if (currentItem) {
+                currentItem.classList.add('selected');
+                currentItem.querySelector('input').checked = true;
+                // 记录选中索引，启用确认按钮
+                selectedIndex = index;
+                document.getElementById('confirmBtn').disabled = false;
+            }
+        }
+
+        // 返回商品选择页
+        function goBackToProduct() {
+            window.location.href = "product.html";
+        }
+
+        // 确认购买，跳转到支付页（pay.html）
+        function goToPay() {
+            if (selectedIndex !== -1) {
+                window.location.href = "pay.html";
+            }
+        }
+    </script>
+</body>
+</html>

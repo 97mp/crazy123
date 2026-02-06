@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PP换肤 - 官方自动发卡平台 | 极速发货</title>
+    <style>
+        :root {
+            --primary: #ff4655;
+            --primary-dim: rgba(255, 70, 85, 0.2);
+            --dark: #0f1923;
+            --card: #1c252e;
+            --text: #fff;
+            --wx-green: #07c160;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', monospace, sans-serif; user-select: none; }
+        
+        body {
+            background-color: #0b1015;
+            color: var(--text);
+            overflow-x: hidden;
+            background-image: radial-gradient(circle at 50% 0%, #2a2a2a 0%, #0b1015 60%);
+            min-height: 100vh;
+        }
+
+        /* === 导航 === */
+        nav {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 5%; width: 100%;
+            background: rgba(15, 25, 35, 0.95); border-bottom: 1px solid rgba(255,255,255,0.05);
+            position: fixed; top: 0; z-index: 100; backdrop-filter: blur(10px);
+        }
+        .logo { font-size: 24px; font-weight: 900; letter-spacing: 1px; }
+        .logo span { color: var(--primary); }
+        
+        .verify-btn {
+            padding: 8px 18px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: #fff; font-size: 12px; cursor: pointer; transition: 0.3s; border-radius: 4px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .verify-btn:hover { background: var(--primary); border-color: var(--primary); box-shadow: 0 0 15px var(--primary-dim); }
+
+        .container { max-width: 1100px; margin: 100px auto 50px; padding: 0 20px; }
+
+        /* === 视频监控 === */
+        .monitor-frame {
+            border: 1px solid #333; background: #000; margin-bottom: 40px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.6);
+        }
+        .monitor-header {
+            padding: 8px 15px; background: #111; color: #666; font-size: 12px;
+            display: flex; justify-content: space-between; border-bottom: 1px solid #222;
+        }
+        .video-box { 
+            position: relative; width: 100%; aspect-ratio: 16/9; 
+            background: #000; cursor: pointer; overflow: hidden;
+        }
+        .video-box:hover .click-hint { opacity: 1; }
+        .click-hint {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 30px;
+            font-size: 14px; pointer-events: none; opacity: 0; transition: 0.3s;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        video { width: 100%; height: 100%; object-fit: contain; display: none; }
+        video.active { display: block; }
+        
+        .ctrl-panel { display: flex; border-top: 1px solid #222; }
+        .ctrl-btn {
+            flex: 1; padding: 15px; background: #161b22; color: #888; border: none;
+            cursor: pointer; font-weight: bold; transition: 0.2s;
+        }
+        .ctrl-btn.active { background: var(--primary); color: #fff; }
+
+        /* === 商品 === */
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .card {
+            background: var(--card); border: 1px solid rgba(255,255,255,0.05); padding: 25px;
+            text-align: center; transition: 0.3s;
+        }
+        .card:hover { transform: translateY(-5px); border-color: var(--primary); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .price { font-size: 32px; font-weight: 900; color: var(--text); margin: 15px 0; }
+        .buy-btn {
+            width: 100%; padding: 12px; background: transparent; border: 1px solid var(--text);
+            color: var(--text); cursor: pointer; font-weight: bold; margin-top: 10px;
+        }
+        .buy-btn:hover { background: var(--text); color: #000; }
+
+        /* === 弹窗通用 === */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            z-index: 1500; display: none; justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+
+        /* === 支付窗口 === */
+        .gateway-window {
+            width: 700px; height: 450px; background: #fff; color: #333;
+            display: flex; border-radius: 4px; overflow: hidden;
+            box-shadow: 0 50px 100px rgba(0,0,0,0.8);
+            transform: scale(0.95); transition: transform 0.3s;
+        }
+        .modal-overlay.active .gateway-window { transform: scale(1); }
+        
+        .gw-left { width: 40%; background: #f5f5f5; padding: 40px; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
+        .gw-right { width: 60%; padding: 30px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .qr-frame { width: 200px; height: 200px; border: 1px solid #eee; padding: 5px; margin-bottom: 15px; position: relative; }
+        .qr-frame img { width: 100%; height: 100%; object-fit: contain; }
+
+        /* === 验证窗口 (科技感) === */
+        .verify-window {
+            width: 420px; background: #13171d; 
+            border: 1px solid rgba(255,255,255,0.1); border-top: 2px solid var(--primary);
+            padding: 35px; border-radius: 8px; text-align: center; position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 20px rgba(255, 70, 85, 0.1);
+            transform: translateY(20px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-overlay.active .verify-window { transform: translateY(0); }
+
+        .v-title { font-size: 18px; margin-bottom: 5px; color: #fff; font-weight: bold; letter-spacing: 1px; }
+        .v-sub { font-size: 12px; color: #666; margin-bottom: 25px; }
+
+        .key-input {
+            width: 100%; padding: 14px; background: #0b1015; 
+            border: 1px solid #333; border-radius: 4px;
+            color: var(--primary); text-align: center; font-family: monospace; font-size: 16px; font-weight: bold;
+            margin-bottom: 20px; outline: none; transition: 0.3s;
+        }
+        .key-input:focus { border-color: var(--primary); box-shadow: 0 0 15px var(--primary-dim); }
+        .key-input::placeholder { color: #333; font-weight: normal; }
+
+        .check-btn {
+            width: 100%; padding: 12px; background: var(--text); color: #000; border: none; border-radius: 4px;
+            font-weight: bold; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden;
+        }
+        .check-btn:hover { background: var(--primary); color: #fff; }
+        
+        .loading-line {
+            height: 2px; width: 0%; background: var(--primary); margin: 0 auto; 
+            transition: width 1s ease-in-out; margin-bottom: 10px;
+        }
+
+        .success-card {
+            background: rgba(7, 193, 96, 0.1); border: 1px solid rgba(7, 193, 96, 0.3);
+            border-radius: 6px; padding: 15px; margin-top: 20px;
+            display: none; text-align: left; animation: fadeIn 0.5s;
+        }
+        .success-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: #ccc; }
+        .hl { color: #fff; font-weight: bold; }
+        .jump-btn {
+            display: block; width: 100%; text-align: center; padding: 8px; margin-top: 10px;
+            background: #07c160; color: white; text-decoration: none; border-radius: 4px; font-size: 12px;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .close-icon { position: absolute; top: 15px; right: 15px; color: #444; cursor: pointer; font-size: 18px; transition: 0.2s; }
+        .close-icon:hover { color: #fff; }
+        
+        /* Loading Mask */
+        .server-mask {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 2000; display: none; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .loader-bar { width: 200px; height: 2px; background: #333; position: relative; overflow: hidden; margin-top: 20px; }
+        .loader-bar::after { content: ''; position: absolute; top:0; left:0; width:100%; height:100%; background:var(--primary); animation: load 2s infinite; transform: translateX(-100%); }
+        @keyframes load { 50% { transform: translateX(100%); } }
+
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="logo">PP<span>SKIN</span></div>
+        <div class="nav-right" style="display:flex; gap:20px; align-items:center;">
+            <button class="verify-btn" onclick="openVerify()">
+                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M7 14c-1.1 0-2-.9-2-2 0-1.1.9-2 2-2 .55 0 1 .45 1 1v1c0 .55-.45 1-1 1zm0-3c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm14 3h-4v2h4v-2zm0-2h-4v2h4v-2zm-2-8c1.1 0 2 .9 2 2v6h-2V6h-4v4h-2V6c0-1.1.9-2 2-2z"/></svg>
+                <span>卡密核销</span>
+            </button>
+            <div style="font-size: 12px; color: #666;">ID: 092</div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="monitor-frame">
+            <div class="monitor-header">
+                <span id="vid-status">>>> SYSTEM: WAREHOUSE.mp4</span>
+                <span style="color:var(--primary)">● LIVE</span>
+            </div>
+            <div class="video-box" onclick="enterFullScreen()">
+                <div class="click-hint">点击全屏沉浸观看</div>
+                <video id="v1" class="active" src="demo1.mp4" muted loop autoplay playsinline></video>
+                <video id="v2" src="demo2.mp4" muted loop playsinline></video>
+            </div>
+            <div class="ctrl-panel">
+                <button class="ctrl-btn active" onclick="switchVid(1, this, event)">通道 A: 仓库解锁</button>
+                <button class="ctrl-btn" onclick="switchVid(2, this, event)">通道 B: 实战特效</button>
+            </div>
+        </div>
+
+        <div class="product-grid">
+            <div class="card">
+                <h3>三天体验卡</h3>
+                <div class="price">¥9.80</div>
+                <button class="buy-btn" onclick="startProcess('三天体验卡', '9.80')">购买</button>
+            </div>
+            <div class="card" style="border-color: var(--primary);">
+                <div style="color:var(--primary); font-size:12px; margin-bottom:5px;">🔥 本周热销</div>
+                <h3>十天周卡</h3>
+                <div class="price">¥25.00</div>
+                <button class="buy-btn" style="background:var(--primary); border:none; color:white" onclick="startProcess('十天周卡', '25.00')">购买</button>
+            </div>
+            <div class="card">
+                <h3>尊享月卡</h3>
+                <div class="price">¥50.00</div>
+                <button class="buy-btn" onclick="startProcess('尊享月卡', '50.00')">购买</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="server-mask" id="loadingMask">
+        <div id="loadingText" style="color:var(--primary); font-family:monospace;">CONNECTING...</div>
+        <div class="loader-bar"></div>
+    </div>
+
+    <div class="modal-overlay" id="payModal">
+        <div class="gateway-window">
+            <div class="close-icon" onclick="closeAll()" style="top:15px; right:20px; z-index:10;">✕</div>
+            <div class="gw-left">
+                <div style="margin-bottom:20px;">
+                    <div style="font-size:12px; color:#999;">PRODUCT NAME</div>
+                    <div style="font-size:18px; font-weight:bold;" id="g-name">--</div>
+                </div>
+                <div style="margin-bottom:20px;">
+                    <div style="font-size:12px; color:#999;">PAY AMOUNT</div>
+                    <div style="font-size:32px; font-weight:bold; color:var(--primary);">¥<span id="g-price">0.00</span></div>
+                </div>
+                <div style="font-size:12px; color:#999; margin-top:auto;">
+                    订单号: <span id="g-oid" style="font-family:monospace;">--</span><br>
+                    付款成功后，请手动点击右上角[卡密核销]
+                </div>
+            </div>
+            <div class="gw-right">
+                <div style="color:#07c160; font-weight:bold; font-size:18px; margin-bottom:15px; display:flex; align-items:center; gap:8px;">
+                    <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M8.5 14.5c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm7 0c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.34 0 .67-.02 1-.05v-.01c.8.73 1.85 1.19 3 1.25.75.04 1.48-.12 2.15-.42 2.61-1.18 4.14-4.04 3.52-6.85C21.9 14.71 22 13.37 22 12 22 6.48 17.52 2 12 2zm5 11.5c0 1.93-1.57 3.5-3.5 3.5-.34 0-.67-.05-.98-.14-.29-.09-.62-.05-.87.11l-1.85 1.18.47-1.76c.07-.26.01-.54-.16-.75-.65-.82-1.02-1.53-1.02-2.31 0-1.93 1.57-3.5 3.5-3.5s3.41 1.57 3.41 3.5z"/></svg>
+                    微信安全支付
+                </div>
+                <div class="qr-frame">
+                    <img id="qr-img" src="" alt="请选择商品">
+                    
+                    <div id="qr-loader" style="position:absolute; top:0; left:0; width:100%; height:100%; background:white; display:flex; align-items:center; justify-content:center;">
+                        <div style="width:20px; height:20px; border:2px solid #eee; border-top-color:#07c160; border-radius:50%; animation:spin 1s infinite;"></div>
+                    </div>
+                </div>
+                <div style="font-size:12px; color:#666;">请使用微信 [扫一扫]</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="verifyModal">
+        <div class="verify-window">
+            <div class="close-icon" onclick="closeAll()">✕</div>
+            
+            <div class="v-title">SECRET KEY VERIFICATION</div>
+            <div class="v-sub">请输入您的订单密钥以获取下载权限</div>
+
+            <input type="text" id="keyInput" class="key-input" placeholder="CKTK-XXXX-XXXX" autocomplete="off">
+            
+            <div class="loading-line" id="v-line"></div>
+            <button class="check-btn" id="checkBtn" onclick="verifyKey()">立即验证</button>
+
+            <div id="successBox" class="success-card">
+                <div class="success-row">
+                    <span>状态</span>
+                    <span style="color:#07c160; font-weight:bold;">● 验证通过</span>
+                </div>
+                <div class="success-row">
+                    <span>密码</span>
+                    <span class="hl" style="background:#333; padding:0 4px;">ppp1</span>
+                </div>
+                <a href="https://wwbfm.lanzoue.com/iFPlw3hp7k0d" target="_blank" class="jump-btn">
+                    点击前往下载云盘
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === 卡密数据库 ===
+        const validKeys = [
+            "CKTKECM4N1RE3EHGWC5BLRKI", "CKTKY4FLU442U3GQ9LMR6F1M", "CKTKTL648PI0HMAR3PQJE1FJ",
+            "CKTKFNIKWC0D9AN8J6IMPA33", "CKTKZ71H38YJ537DX459QM9T", "CKTKSNSJ8R8OPQ26E030Z7M7",
+            "CKTKGBCMNZ3R55HWA2GCCLPW", "CKTKNAYMIZZGLO5XTJ6OGMK1", "CKTK4E5UB6AUZC0Q5B1LAX62",
+            "CKTKIOVSI34L5M66Y84AC9T1"
+        ];
+
+        // === 价格与图片映射表 (Updated to .png) ===
+        const qrMap = {
+            '9.80': '9.8.png',
+            '25.00': '25.png',
+            '50.00': '50.png'
+        };
+
+        // 验证逻辑
+        function verifyKey() {
+            const input = document.getElementById('keyInput').value.trim();
+            const btn = document.getElementById('checkBtn');
+            const line = document.getElementById('v-line');
+            const box = document.getElementById('successBox');
+
+            btn.innerText = "VERIFYING...";
+            btn.style.opacity = "0.7";
+            line.style.width = "100%"; 
+
+            setTimeout(() => {
+                if (validKeys.includes(input)) {
+                    box.style.display = 'block';
+                    btn.innerText = "验证成功";
+                    btn.style.background = "#07c160";
+                    btn.style.color = "#fff";
+                } else {
+                    alert('❌ 卡密无效！请检查是否输入正确');
+                    btn.innerText = "立即验证";
+                    btn.style.opacity = "1";
+                    btn.style.background = "var(--text)";
+                    btn.style.color = "#000";
+                }
+                line.style.width = "0%";
+            }, 1000);
+        }
+
+        // 支付逻辑
+        function startProcess(name, price) {
+            const mask = document.getElementById('loadingMask');
+            const txt = document.getElementById('loadingText');
+            
+            mask.style.display = 'flex';
+            txt.innerText = "连接发卡服务器...";
+            
+            setTimeout(() => { txt.innerText = "锁定库存中..."; }, 800);
+            
+            setTimeout(() => {
+                mask.style.display = 'none';
+                openGateway(name, price);
+            }, 1800);
+        }
+
+        function openGateway(name, price) {
+            const gw = document.getElementById('payModal');
+            gw.classList.add('active');
+            
+            document.getElementById('g-name').innerText = name;
+            document.getElementById('g-price').innerText = price;
+            
+            // 查找对应的 PNG 图片
+            const imgPath = qrMap[price] || '9.8.png'; // 默认 fallback
+            document.getElementById('qr-img').src = imgPath;
+
+            document.getElementById('g-oid').innerText = "T" + Date.now().toString().slice(-8);
+
+            const loader = document.getElementById('qr-loader');
+            loader.style.display = 'flex';
+            setTimeout(() => { loader.style.display = 'none'; }, 800);
+        }
+
+        function openVerify() {
+            closeAll();
+            document.getElementById('verifyModal').classList.add('active');
+            document.getElementById('successBox').style.display = 'none';
+            document.getElementById('checkBtn').innerText = "立即验证";
+            document.getElementById('checkBtn').style.background = "var(--text)";
+            document.getElementById('checkBtn').style.color = "#000";
+        }
+
+        function closeAll() {
+            document.querySelectorAll('.modal-overlay').forEach(el => el.classList.remove('active'));
+        }
+
+        function switchVid(id, btn, event) {
+            event.stopPropagation();
+            document.querySelectorAll('.ctrl-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const v1 = document.getElementById('v1');
+            const v2 = document.getElementById('v2');
+            const txt = document.getElementById('vid-status');
+            if(id === 1) { v1.classList.add('active'); v2.classList.remove('active'); v1.play(); v2.pause(); txt.innerText = ">>> SYSTEM: WAREHOUSE.mp4"; }
+            else { v1.classList.remove('active'); v2.classList.add('active'); v2.play(); v1.pause(); txt.innerText = ">>> SYSTEM: COMBAT_VIEW.mp4"; }
+        }
+
+        function enterFullScreen() {
+            const v = document.querySelector('video.active');
+            if(v) { (v.requestFullscreen || v.webkitRequestFullscreen || v.msRequestFullscreen).call(v); }
+        }
+
+        const style = document.createElement('style');
+        style.innerHTML = `@keyframes spin { to { transform: rotate(360deg); } }`;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
